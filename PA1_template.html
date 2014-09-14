@@ -413,6 +413,7 @@ for(i in 1:nrow(dataNew)){
             dataNew$daytype[i] &lt;- &quot;weekday&quot;
       }
 }
+dataNew$daytype &lt;- as.factor(dataNew$daytype)
 </code></pre>
 
 <p>Make a panel plot containing a time series plot (i.e. type = &ldquo;l&rdquo;) of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).</p>

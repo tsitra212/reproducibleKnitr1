@@ -113,6 +113,7 @@ for(i in 1:nrow(dataNew)){
             dataNew$daytype[i] <- "weekday"
       }
 }
+dataNew$daytype <- as.factor(dataNew$daytype)
 ```
 
 
