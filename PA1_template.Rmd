@@ -1,0 +1,129 @@
+Programming Assignment 1- Reproducible Research
+========================================================
+### By Paul Nguyen
+
+## Loading and preprocessing the data
+
+```{r}
+data <- read.csv("activity.csv")
+dataComplete <- data[complete.cases(data),]
+```
+
+
+
+
+## What is mean total number of steps taken per day?
+
+Make a histogram of the total number of steps taken each day with the NA values removed.
+
+```{r fig.height=4, fig.width=9}
+library(ggplot2)
+p1 <- ggplot(dataComplete, aes(x=date, y=steps))+geom_histogram(stat="identity")
+p1 <- p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p1 <- p1 + labs(title="Number of Steps by Day (NA removed)")
+p1
+```
+
+Calculate and report the mean and median total number of steps taken per day
+
+```{r}
+library(data.table)
+dt <- data.table(dataComplete)
+dt[,list(mean=mean(steps),median=median(steps)), by=date]
+```
+
+
+
+
+## What is the average daily activity pattern?
+
+Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r fig.height=4, fig.width=9}
+dtinterval <- dt[,list(mean=mean(steps)), by=interval]
+p <- ggplot(dtinterval, aes(x=interval,y=mean))+geom_line()
+p + labs(title="Average Number of Steps Per Interval")
+```
+
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r}
+maxmean <- max(dtinterval$mean)
+dtinterval$interval[dtinterval$mean==maxmean]
+```
+
+## Imputing missing values
+
+Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+```{r}
+colSums(is.na(data))
+```
+
+Create a new dataset that is equal to the original dataset but with the missing data filled in. Each NA value is replaced with the average steps for that interval.
+
+```{r}
+dataNew <- data
+for(i in 1:nrow(dataNew)){
+      if(is.na(dataNew$steps[i])){
+            interval <- dataNew$interval[i]
+            stepmean <- dtinterval$mean[dtinterval$interval==interval]
+            dataNew$steps[i] <- stepmean
+      }
+}
+```
+
+
+
+Make a histogram of the total number of steps taken each day and 
+
+```{r fig.height=6, fig.width=9}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+p2 <- ggplot(dataNew, aes(x=date, y=steps))+geom_histogram(stat="identity")
+p2 <- p2 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p2 <- p2 + labs(title="Number of Steps by Day (NA replaced)")
+grid.arrange(p1, p2)
+```
+
+Calculate and report the mean and median total number of steps taken per day. 
+
+```{r}
+dtNew <- data.table(dataNew)
+dtNew[,list(mean=mean(steps),median=median(steps)), by=date]
+newrecords <- nrow(dtNew)-nrow(dt)
+```
+
+Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+There are `r newrecords` new records added to the data when we replace the NA values with the average number of steps. 8 new days are added to the data. Each of these days share the same average number of steps.
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
+```{r}
+dataNew$date <- as.Date(dataNew$date)
+dataNew$day <- weekdays(dataNew$date)
+for(i in 1:nrow(dataNew)){
+      if(dataNew$day[i] == "Saturday" | dataNew$day[i] == "Sunday"){
+            dataNew$daytype[i] <- "weekend"
+      }else{
+            dataNew$daytype[i] <- "weekday"
+      }
+}
+```
+
+
+Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
+
+```{r fig.width=9}
+dtDay <- data.table(dataNew)
+dtDay <- dtDay[,list(mean=mean(steps)), by=c("interval", "daytype")]
+p3 <- ggplot(dtDay, aes(x=interval,y=mean))+geom_line()
+p3 <- p3 + facet_grid(daytype ~ .) + labs(title="Average Number of Steps Per Interval by Day Type")
+p3
+```
+
+
